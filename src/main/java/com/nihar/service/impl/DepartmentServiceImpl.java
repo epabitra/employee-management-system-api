@@ -7,6 +7,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -22,5 +23,10 @@ public class DepartmentServiceImpl implements DepartmentService {
     @Override
     public List<Department> getAllDepartments() {
         return departmentRepository.findAll();
+    }
+
+    @Override
+    public Optional<Department> findByUuid(String uuid) {
+        return departmentRepository.findByUuid(uuid); // ✅ implements the missing method
     }
 }

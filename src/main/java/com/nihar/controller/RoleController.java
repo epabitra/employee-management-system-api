@@ -20,7 +20,7 @@ public class RoleController {
         return ResponseEntity.ok(roleService.createRole(role));
     }
 
-    @GetMapping
+    @GetMapping("/list")
     public ResponseEntity<List<Role>> getAllRoles() {
         return ResponseEntity.ok(roleService.getAllRoles());
     }

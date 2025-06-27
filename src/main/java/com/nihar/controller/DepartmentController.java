@@ -1,5 +1,7 @@
 package com.nihar.controller;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.nihar.entity.Department;
 import com.nihar.service.DepartmentService;
 import lombok.RequiredArgsConstructor;
@@ -20,7 +22,7 @@ public class DepartmentController {
         return ResponseEntity.ok(departmentService.createDepartment(department));
     }
 
-    @GetMapping
+    @GetMapping("/list")
     public ResponseEntity<List<Department>> getAllDepartments() {
         return ResponseEntity.ok(departmentService.getAllDepartments());
     }

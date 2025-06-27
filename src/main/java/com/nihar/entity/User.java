@@ -33,7 +33,6 @@ public class User {
     private String gender;
     private String department;
     private String designation;
-    private String role;
 
     private double salary;
     private LocalDate joiningDate;
@@ -45,7 +44,7 @@ public class User {
     private LocalDateTime updatedDate;
     private Boolean active;
 
-    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL)
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.EAGER)
     private List<UserRoleDepartment> userRoleDepartment;
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL)

@@ -3,6 +3,7 @@ package com.nihar.dto;
 import lombok.Data;
 
 import java.util.Date;
+import java.util.List;
 
 @Data
 public class UserDetailsDTO {
@@ -17,11 +18,14 @@ public class UserDetailsDTO {
 
     private String mobileNumber;
     private String gender;
-    private String department;
     private String designation;
-    private String role;
 
     private double salary;
     private Date joiningDate;
     private Date dateOfBirth;
+
+    private String roleUuid;
+    private String departmentUuid;
+
+    private List<String> roles; // ✅ Add this for output use (getAllUsers)
 }
