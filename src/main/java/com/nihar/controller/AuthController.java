@@ -28,6 +28,7 @@ public class AuthController {
     private final JwtUtil jwtUtil;
 	@Autowired
     private final UserRepository userRepository;
+	
 
     @PostMapping("/login")
     public Map<String, String> login(@RequestBody Map<String, String> loginData) {
@@ -35,10 +36,11 @@ public class AuthController {
         String email = loginData.get("email");
         String password = loginData.get("password");
 
-       authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(email, password));
+        authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(email, password));
 
         UserDetails userDetails = userDetailsService.loadUserByUsername(email);
-        String token = jwtUtil.generateToken(userDetails.getUsername());
+        String token = jwtUtil.generateToken(userDetails); // ✅ Correct
+
         
         System.out.println(userDetails.getUsername());
         System.out.println(token);

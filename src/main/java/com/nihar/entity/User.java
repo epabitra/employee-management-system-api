@@ -1,12 +1,12 @@
 package com.nihar.entity;
 
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.util.Date;
-import java.util.List;
-
 import jakarta.persistence.*;
 import lombok.*;
+
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Data
 @NoArgsConstructor
@@ -29,7 +29,7 @@ public class User {
     private String langKey;
     private String timezoneId;
 
-    private String mobileNumber; // Renamed from 'phone' for consistency
+    private String mobileNumber;
     private String gender;
     private String department;
     private String designation;
@@ -42,11 +42,14 @@ public class User {
     private String updatedBy;
     private LocalDateTime createdDate;
     private LocalDateTime updatedDate;
+
     private Boolean active;
 
+    @Builder.Default
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.EAGER)
-    private List<UserRoleDepartment> userRoleDepartment;
+    private List<UserRoleDepartment> userRoleDepartment = new ArrayList<>();
 
+    @Builder.Default
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL)
-    private List<Salary> salaries;
+    private List<Salary> salaries = new ArrayList<>();
 }
