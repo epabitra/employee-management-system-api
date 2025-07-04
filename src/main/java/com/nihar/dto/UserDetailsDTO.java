@@ -26,6 +26,10 @@ public class UserDetailsDTO {
 
     private String roleUuid;
     private String departmentUuid;
+    
+    private Long roleId;
+    private Long departmentId;
+
 
     private List<String> roles; // ✅ Add this for output use (getAllUsers)
 }

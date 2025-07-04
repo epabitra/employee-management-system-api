@@ -11,18 +11,16 @@ import com.nihar.service.UserService;
 import com.nihar.util.JwtUtil;
 
 import lombok.RequiredArgsConstructor;
-
-import org.springframework.security.core.Authentication;
-
-import java.util.Map;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/users")
@@ -30,15 +28,13 @@ import org.springframework.web.bind.annotation.*;
 public class UserController {
 
     private final UserService userService;
-
     private final JwtUtil jwtUtil;
-    
+
     @Autowired
     private CustomUserDetailsService userDetailsService;
 
-
     /**
-     * ✅ Public: Account creation
+     * ✅ Public: Signup + return token with roles
      */
     @PostMapping("/create")
     public ResponseEntity<?> addUser(@RequestBody UserDetailsDTO dto) {
@@ -56,23 +52,26 @@ public class UserController {
         // 2. Create the user
         User createdUser = userService.addUser(dto);
 
-        // 3. Load UserDetails (for generating JWT with roles)
+        // 3. Assign Role & Department to User (Required before generating token)
+        userService.assignRoleAndDepartment(
+        	    createdUser.getId(),
+        	    dto.getRoleUuid(),
+        	    dto.getDepartmentUuid()
+        	);
+
+
+        // 4. Load user with authorities (so token includes roles)
         UserDetails userDetails = userDetailsService.loadUserByUsername(createdUser.getEmail());
 
-        // 4. Generate JWT token
+        // 5. Generate JWT token
         String token = jwtUtil.generateToken(userDetails);
 
-        // 5. Map full user info (DTO) if needed
-        User user = createdUser;
-
-
-        // 6. Return token + user info
+        // 6. Return response
         return ResponseEntity.status(HttpStatus.CREATED).body(Map.of(
-            "token", token,
-            "user", user
+                "token", token,
+                "user", createdUser
         ));
     }
-
 
     /**
      * 🔐 Admin only: Get all users
@@ -100,14 +99,19 @@ public class UserController {
     public ResponseEntity<CountEmployeeDTO> getEmployeeCount() {
         return ResponseEntity.ok(userService.getEmployeeCount());
     }
-    
+
+    /**
+     * ✅ Check current login info
+     */
     @GetMapping("/whoami")
     public ResponseEntity<?> whoami(Authentication authentication) {
         return ResponseEntity.ok(authentication);
     }
-    
-    
-    @PreAuthorize("hasRole('ADMIN')")
+
+    /**
+     * 🔐 Admin only: Get current user full details
+     */
+   
     @GetMapping("/getUsers")
     public ResponseEntity<FullUserDetailsDTO> getCurrentUserDetails() {
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
@@ -115,7 +119,7 @@ public class UserController {
     }
 
     /**
-     * 🔐 Admin only: Secure test endpoint
+     * 🔐 Admin only: Test endpoint
      */
     @PreAuthorize("hasRole('ADMIN')")
     @GetMapping("/secure")

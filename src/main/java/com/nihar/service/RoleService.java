@@ -10,4 +10,6 @@ public interface RoleService {
     List<Role> getAllRoles();
     
     Optional<Role> findByUuid(String uuid); // ✅ Newly added
+    
+    Optional<Role> findById(Long id);
 }

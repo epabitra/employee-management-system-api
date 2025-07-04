@@ -9,5 +9,6 @@ public interface DepartmentService {
     Department createDepartment(Department department);
     List<Department> getAllDepartments();
 
+    Optional<Department> findById(Long id);
     Optional<Department> findByUuid(String uuid); // ✅ Newly added
 }

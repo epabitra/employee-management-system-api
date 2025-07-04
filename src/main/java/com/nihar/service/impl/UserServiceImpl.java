@@ -1,14 +1,9 @@
 package com.nihar.service.impl;
 
-import com.nihar.dto.AdminDashboardCounterDTO;
-import com.nihar.dto.CountEmployeeDTO;
-import com.nihar.dto.FullUserDetailsDTO;
-import com.nihar.dto.UserDetailsDTO;
-import com.nihar.dto.UserWithRoleDTO;
+import com.nihar.dto.*;
 import com.nihar.entity.*;
 import com.nihar.repository.UserRepository;
 import com.nihar.service.*;
-
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -30,6 +25,10 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public User addUser(UserDetailsDTO dto) {
+        if (dto.getRoleUuid() == null || dto.getDepartmentUuid() == null) {
+            throw new IllegalArgumentException("Role UUID and Department UUID must not be null");
+        }
+
         User user = new User();
         user.setUuid(UUID.randomUUID().toString());
         user.setFirstName(dto.getFirstName());
@@ -47,13 +46,11 @@ public class UserServiceImpl implements UserService {
         user.setActive(true);
 
         if (dto.getJoiningDate() != null) {
-            user.setJoiningDate(dto.getJoiningDate().toInstant()
-                    .atZone(ZoneId.systemDefault()).toLocalDate());
+            user.setJoiningDate(dto.getJoiningDate().toInstant().atZone(ZoneId.systemDefault()).toLocalDate());
         }
 
         if (dto.getDateOfBirth() != null) {
-            user.setDateOfBirth(dto.getDateOfBirth().toInstant()
-                    .atZone(ZoneId.systemDefault()).toLocalDate());
+            user.setDateOfBirth(dto.getDateOfBirth().toInstant().atZone(ZoneId.systemDefault()).toLocalDate());
         }
 
         userRepository.save(user);
@@ -64,17 +61,7 @@ public class UserServiceImpl implements UserService {
         Department department = departmentService.findByUuid(dto.getDepartmentUuid())
                 .orElseThrow(() -> new RuntimeException("Department not found"));
 
-        UserRoleDepartment urd = new UserRoleDepartment();
-        urd.setUuid(UUID.randomUUID().toString());
-        urd.setUser(user);
-        urd.setRole(role);
-        urd.setDepartment(department);
-        urd.setCreatedDate(LocalDateTime.now());
-        urd.setActive(true);
-        urd.setCreatedBy(user.getEmail());
-        urd.setUpdatedBy(user.getEmail());
-
-        userRoleDepartmentService.save(urd);
+        saveUserRoleDepartment(user, role, department);
 
         return user;
     }
@@ -87,12 +74,12 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public AdminDashboardCounterDTO getAdminDashboardCounter() {
-        AdminDashboardCounterDTO counter = new AdminDashboardCounterDTO();
-        counter.setEmployeeCount(userRepository.count());
-        counter.setPresentEmployeeCount(0); // Placeholder
-        counter.setAbsentEmployeeCount(0);  // Placeholder
-        counter.setSalaryProgress(0.0);     // Placeholder
-        return counter;
+        AdminDashboardCounterDTO dto = new AdminDashboardCounterDTO();
+        dto.setEmployeeCount(userRepository.count());
+        dto.setPresentEmployeeCount(0);  // TODO: Add actual logic
+        dto.setAbsentEmployeeCount(0);   // TODO: Add actual logic
+        dto.setSalaryProgress(0.0);      // TODO: Add actual logic
+        return dto;
     }
 
     @Override
@@ -100,7 +87,8 @@ public class UserServiceImpl implements UserService {
         return userRepository.findAll().stream().map(user -> {
             List<String> roles = user.getUserRoleDepartment().stream()
                     .map(urd -> urd.getRole().getName())
-                    .toList();
+                    .filter(Objects::nonNull)
+                    .collect(Collectors.toList());
 
             UserDetailsDTO dto = new UserDetailsDTO();
             dto.setFirstName(user.getFirstName());
@@ -111,6 +99,7 @@ public class UserServiceImpl implements UserService {
             dto.setDesignation(user.getDesignation());
             dto.setRoles(roles);
             dto.setSalary(user.getSalary());
+
             return dto;
         }).collect(Collectors.toList());
     }
@@ -134,28 +123,23 @@ public class UserServiceImpl implements UserService {
         dto.setTimezoneId(user.getTimezoneId());
         dto.setLangKey(user.getLangKey());
 
-        // ✅ Set roles
         dto.setRoles(user.getUserRoleDepartment().stream()
                 .map(urd -> urd.getRole().getName())
                 .filter(Objects::nonNull)
                 .distinct()
-                .toList());
+                .collect(Collectors.toList()));
 
-        // ✅ Set departments
         dto.setDepartments(user.getUserRoleDepartment().stream()
                 .map(urd -> urd.getDepartment().getName())
                 .filter(Objects::nonNull)
                 .distinct()
-                .toList());
+                .collect(Collectors.toList()));
 
-        // ✅ Set authorities (ROLE_ prefix required by Spring Security)
-        Set<String> authorities = user.getUserRoleDepartment().stream()
+        dto.setAuthorities(user.getUserRoleDepartment().stream()
                 .map(urd -> urd.getRole().getName())
                 .filter(Objects::nonNull)
                 .map(roleName -> "ROLE_" + roleName.toUpperCase())
-                .collect(Collectors.toSet());
-
-        dto.setAuthorities(authorities);
+                .collect(Collectors.toSet()));
 
         return dto;
     }
@@ -166,20 +150,66 @@ public class UserServiceImpl implements UserService {
         return new CountEmployeeDTO(count);
     }
 
-    // ✅ Optional: Method to retrieve user + roles for UI
+    @Override
     public UserWithRoleDTO getUserWithRoles(String email) {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
         List<String> roles = user.getUserRoleDepartment().stream()
                 .map(urd -> urd.getRole().getName())
-                .toList();
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList());
 
-        return UserWithRoleDTO.builder()
-                .firstName(user.getFirstName())
-                .lastName(user.getLastName())
-                .email(user.getEmail())
-                .roles(roles)
-                .build();
+        UserWithRoleDTO dto = new UserWithRoleDTO();
+        dto.setFirstName(user.getFirstName());
+        dto.setLastName(user.getLastName());
+        dto.setEmail(user.getEmail());
+        dto.setRoles(roles);
+        return dto;
+    }
+
+    @Override
+    public void assignRoleAndDepartment(Long userId, String roleUuid, String departmentUuid) {
+        if (roleUuid == null || departmentUuid == null) {
+            throw new IllegalArgumentException("Role UUID and Department UUID must not be null");
+        }
+
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        Role role = roleService.findByUuid(roleUuid)
+                .orElseThrow(() -> new RuntimeException("Role not found"));
+
+        Department department = departmentService.findByUuid(departmentUuid)
+                .orElseThrow(() -> new RuntimeException("Department not found"));
+
+        UserRoleDepartment urd = new UserRoleDepartment();
+        urd.setUuid(UUID.randomUUID().toString());
+        urd.setUser(user);
+        urd.setRole(role);
+        urd.setDepartment(department);
+        urd.setCreatedDate(LocalDateTime.now());
+        urd.setUpdatedDate(LocalDateTime.now());
+        urd.setCreatedBy(user.getEmail());
+        urd.setUpdatedBy(user.getEmail());
+        urd.setActive(true);
+
+        userRoleDepartmentService.save(urd);
+    }
+
+
+    private void saveUserRoleDepartment(User user, Role role, Department department) {
+        UserRoleDepartment urd = new UserRoleDepartment();
+        urd.setUuid(UUID.randomUUID().toString());
+        urd.setUser(user);
+        urd.setRole(role);
+        urd.setDepartment(department);
+        urd.setCreatedDate(LocalDateTime.now());
+        urd.setUpdatedDate(LocalDateTime.now());
+        urd.setCreatedBy(user.getEmail());
+        urd.setUpdatedBy(user.getEmail());
+        urd.setActive(true);
+
+        userRoleDepartmentService.save(urd);
     }
 }

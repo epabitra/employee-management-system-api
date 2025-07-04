@@ -29,4 +29,9 @@ public class DepartmentServiceImpl implements DepartmentService {
     public Optional<Department> findByUuid(String uuid) {
         return departmentRepository.findByUuid(uuid); // ✅ implements the missing method
     }
+    
+    @Override
+    public Optional<Department> findById(Long id) {
+        return departmentRepository.findById(id);
+    }
 }
