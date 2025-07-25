@@ -47,7 +47,15 @@ public class SecurityConfig {
                         .requestMatchers("/api/roles/**").permitAll()
                         .requestMatchers("/api/users/create").permitAll()
                         .requestMatchers("/api/users/count").permitAll()
+                        .requestMatchers("/api/users/employees-per-department").permitAll()
+                        .requestMatchers("/api/users/birthday-today").permitAll()
                         .requestMatchers("/api/users/getUsers").authenticated()
+                        .requestMatchers("/api/teams", "/api/teams/**").permitAll()
+                        .requestMatchers(
+                                "/swagger-ui/**", 
+                                "/v3/api-docs/**", 
+                                "/swagger-ui.html"
+                            ).permitAll()
                         .anyRequest().authenticated()
                 )
                 .sessionManagement(sess -> sess.sessionCreationPolicy(SessionCreationPolicy.STATELESS))

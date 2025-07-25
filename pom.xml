@@ -41,6 +41,12 @@
 		    <version>2.2.0</version>
 		</dependency>
 		
+		<!-- dependancy for mail sending -->
+		<dependency>
+   			 <groupId>org.springframework.boot</groupId>
+    		<artifactId>spring-boot-starter-mail</artifactId>
+		</dependency>
+
 		<!-- https://mvnrepository.com/artifact/org.springframework.security/spring-security-web -->
 		<dependency>
 		    <groupId>org.springframework.boot</groupId>

@@ -7,7 +7,7 @@ import lombok.NoArgsConstructor;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class CountEmployeeDTO {
-	private long countEmployee;
-
+public class DepartmentEmployeeCountDTO {
+    private String departmentName;
+    private long employeeCount;
 }

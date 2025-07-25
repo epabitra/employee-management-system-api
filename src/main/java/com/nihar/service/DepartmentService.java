@@ -11,4 +11,6 @@ public interface DepartmentService {
 
     Optional<Department> findById(Long id);
     Optional<Department> findByUuid(String uuid); // ✅ Newly added
+    void delete(Long id);
+
 }

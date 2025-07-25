@@ -1,49 +1,84 @@
 package com.nihar.controller;
 
-import java.util.List;
-
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
-
 import com.nihar.entity.Team;
 import com.nihar.service.TeamService;
-
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/teams")
 @RequiredArgsConstructor
 public class TeamController {
 
-    private final TeamService service;
+    private final TeamService teamService;
 
-    @PostMapping
-    public ResponseEntity<Team> create(@RequestBody Team obj) {
-        return ResponseEntity.ok(service.save(obj));
+    // Get all teams
+    @GetMapping("/list")
+    public ResponseEntity<List<Team>> getAllTeams() {
+        return ResponseEntity.ok(teamService.findAll());
     }
 
-    @GetMapping
-    public ResponseEntity<List<Team>> getAll() {
-        return ResponseEntity.ok(service.findAll());
+    // Get team by UUID
+    @GetMapping("/{uuid}")
+    public ResponseEntity<Team> getTeamByUuid(@PathVariable String uuid) {
+        Optional<Team> team = teamService.findByUuid(uuid);
+        return team.map(ResponseEntity::ok).orElse(ResponseEntity.notFound().build());
     }
 
-    @GetMapping("/{id}")
-    public ResponseEntity<Team> getById(@PathVariable Long id) {
-        return service.findById(id)
-            .map(ResponseEntity::ok)
-            .orElse(ResponseEntity.notFound().build());
+    // Create new team
+    @PostMapping("/create")
+    public ResponseEntity<Team> createTeam(@RequestBody Team team) {
+        // Set required fields manually (you can automate with DTO + Mapper later)
+        team.setUuid(UUID.randomUUID().toString());
+        team.setCreatedDate(LocalDateTime.now());
+        team.setCreatedBy("system"); // replace with logged-in user later
+        team.setActive(true);
+
+        Team savedTeam = teamService.save(team);
+        return ResponseEntity.ok(savedTeam);
+    }
+    
+ // Count total teams
+    @GetMapping("/count")
+    public ResponseEntity<Long> countTeams() {
+        return ResponseEntity.ok(teamService.countTeams());
     }
 
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Void> delete(@PathVariable Long id) {
-        service.delete(id);
-        return ResponseEntity.noContent().build();
+
+    // Update team by UUID
+    @PutMapping("/{uuid}")
+    public ResponseEntity<Team> updateTeam(@PathVariable String uuid, @RequestBody Team updatedTeam) {
+        Optional<Team> existingTeamOpt = teamService.findByUuid(uuid);
+
+        if (existingTeamOpt.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+
+        Team existingTeam = existingTeamOpt.get();
+        existingTeam.setTeamName(updatedTeam.getTeamName());
+        existingTeam.setDescription(updatedTeam.getDescription());
+        existingTeam.setUpdatedBy("system"); // replace with current user
+        existingTeam.setUpdatedDate(LocalDateTime.now());
+
+        Team savedTeam = teamService.save(existingTeam);
+        return ResponseEntity.ok(savedTeam);
+    }
+
+    // Delete team by UUID
+    @DeleteMapping("/{uuid}")
+    public ResponseEntity<Void> deleteTeam(@PathVariable String uuid) {
+        Optional<Team> existingTeam = teamService.findByUuid(uuid);
+        if (existingTeam.isPresent()) {
+            teamService.delete(existingTeam.get().getId());
+            return ResponseEntity.noContent().build(); // Corrected return type to ResponseEntity<Void>
+        } else {
+            return ResponseEntity.notFound().build();
+        }
     }
 }
-

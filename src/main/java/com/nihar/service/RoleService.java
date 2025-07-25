@@ -12,4 +12,7 @@ public interface RoleService {
     Optional<Role> findByUuid(String uuid); // ✅ Newly added
     
     Optional<Role> findById(Long id);
+    
+    void delete(Long id);
+
 }

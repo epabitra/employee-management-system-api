@@ -2,11 +2,12 @@ package com.nihar.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nihar.dto.AdminDashboardCounterDTO;
-import com.nihar.dto.CountEmployeeDTO;
+import com.nihar.dto.DepartmentEmployeeCountDTO;
 import com.nihar.dto.FullUserDetailsDTO;
 import com.nihar.dto.UserDetailsDTO;
 import com.nihar.entity.User;
 import com.nihar.security.CustomUserDetailsService;
+import com.nihar.service.MailService;
 import com.nihar.service.UserService;
 import com.nihar.util.JwtUtil;
 
@@ -20,6 +21,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -29,6 +31,8 @@ public class UserController {
 
     private final UserService userService;
     private final JwtUtil jwtUtil;
+    private final MailService mailService;
+
 
     @Autowired
     private CustomUserDetailsService userDetailsService;
@@ -65,6 +69,20 @@ public class UserController {
 
         // 5. Generate JWT token
         String token = jwtUtil.generateToken(userDetails);
+        
+     // ✅ Send email after user is created
+        try {
+            String subject = "Welcome to the Company!";
+            String message = "Hi " + createdUser.getFullName() + ",\n\n" +
+                             "Your account has been created successfully.\n" +
+                             "Email: " + createdUser.getEmail() + "\n" +
+                             "Please contact HR to set up your password.\n\n" +
+                             "Regards,\nCompany Admin";
+
+            mailService.sendWelcomeEmail(createdUser.getEmail(), subject, message);
+        } catch (Exception e) {
+            e.printStackTrace(); // log error or show message
+        }
 
         // 6. Return response
         return ResponseEntity.status(HttpStatus.CREATED).body(Map.of(
@@ -73,32 +91,41 @@ public class UserController {
         ));
     }
 
-    /**
-     * 🔐 Admin only: Get all users
-     */
-    @PreAuthorize("hasRole('ADMIN')")
-    @GetMapping
-    public ResponseEntity<Object> getAllUsers() {
-        return ResponseEntity.ok(userService.getAllUsers());
-    }
+  
 
+    
     /**
-     * 🔐 Admin only: Dashboard counter
+     * 🔐 Admin : Dashboard summary with total employees, teams, salary, and departments
      */
-    @PreAuthorize("hasRole('ADMIN')")
-    @GetMapping("/dashboard-count")
-    public ResponseEntity<AdminDashboardCounterDTO> getDashboardCount() {
+//    @PreAuthorize("hasAnyRole('ADMIN')")
+    @GetMapping("/count")
+    public ResponseEntity<AdminDashboardCounterDTO> getDashboardSummary() {
         return ResponseEntity.ok(userService.getAdminDashboardCounter());
     }
-
+    
+    
     /**
-     * 🔐 Admin or Manager: Employee count
+     * 🔐 Admin : Dashboard summaryfor pie chart
      */
-    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
-    @GetMapping("/count")
-    public ResponseEntity<CountEmployeeDTO> getEmployeeCount() {
-        return ResponseEntity.ok(userService.getEmployeeCount());
+    
+    @GetMapping("/employees-per-department")
+    public List<DepartmentEmployeeCountDTO> getEmployeeCountPerDepartment() {
+        return userService.getEmployeeCountGroupedByDepartment();
     }
+    
+    
+    /**
+     * 🔐 Admin :  Birthday today
+     */
+    
+    @GetMapping("/birthday-today")
+    public ResponseEntity<List<String>> getTodaysBirthdays() {
+        List<String> birthdayUsers = userService.getUsersWithBirthdayToday();
+        return ResponseEntity.ok(birthdayUsers);
+    }
+
+
+
 
     /**
      * ✅ Check current login info
@@ -118,12 +145,5 @@ public class UserController {
         return ResponseEntity.ok(userService.getFullUserDetails(email));
     }
 
-    /**
-     * 🔐 Admin only: Test endpoint
-     */
-    @PreAuthorize("hasRole('ADMIN')")
-    @GetMapping("/secure")
-    public ResponseEntity<String> secureData() {
-        return ResponseEntity.ok("✅ Only ADMIN can access this secure data.");
-    }
+   
 }

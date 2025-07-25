@@ -29,6 +29,9 @@ public class UserDetailsDTO {
     
     private Long roleId;
     private Long departmentId;
+    private String teamUuid;
+    
+    private boolean sendEmail;
 
 
     private List<String> roles; // ✅ Add this for output use (getAllUsers)

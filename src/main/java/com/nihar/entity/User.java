@@ -52,4 +52,11 @@ public class User {
     @Builder.Default
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL)
     private List<Salary> salaries = new ArrayList<>();
+    
+    public String getFullName() {
+        return firstName + " " + lastName;
+    }
+
+    
+    
 }

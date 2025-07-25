@@ -1,7 +1,7 @@
 package com.nihar.controller;
 
 import com.nihar.util.JwtUtil;
-import com.nihar.entity.User;
+
 import com.nihar.repository.UserRepository;
 import com.nihar.security.CustomUserDetailsService;
 
@@ -21,13 +21,15 @@ public class AuthController {
 	
 	@Autowired
 	private AuthenticationManager authenticationManager;
-
+	
 	@Autowired
     private final CustomUserDetailsService userDetailsService;
+	
 	@Autowired
     private final JwtUtil jwtUtil;
+	
 	@Autowired
-    private final UserRepository userRepository;
+    private final UserRepository userRepository; 
 	
 
     @PostMapping("/login")
@@ -39,7 +41,7 @@ public class AuthController {
         authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(email, password));
 
         UserDetails userDetails = userDetailsService.loadUserByUsername(email);
-        String token = jwtUtil.generateToken(userDetails); // ✅ Correct
+        String token = jwtUtil.generateToken(userDetails); 
 
         
         System.out.println(userDetails.getUsername());
